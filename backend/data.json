@@ -29,6 +29,36 @@
       "location": "????",
       "note": "",
       "createdAt": "2026-06-20T14:37:10.244Z"
+    },
+    {
+      "id": "mqmiax8c7jruk",
+      "name": "阿莫西林",
+      "batchNo": "20",
+      "quantity": 100,
+      "expiryDate": "2026-06-20",
+      "location": "",
+      "note": "",
+      "createdAt": "2026-06-20T15:22:29.436Z"
+    },
+    {
+      "id": "mqmjp5n0kl8cf",
+      "name": "感冒灵颗粒",
+      "batchNo": "GL-CLEAN-001",
+      "quantity": 15,
+      "expiryDate": "2026-12-31",
+      "location": "客厅药箱",
+      "note": "冲服",
+      "createdAt": "2026-06-20T16:01:33.132Z"
+    },
+    {
+      "id": "mqmjp5nazdanq",
+      "name": "健胃消食片",
+      "batchNo": "JW-CLEAN-001",
+      "quantity": 20,
+      "expiryDate": "2026-08-15",
+      "location": "卧室抽屉",
+      "note": "饭前服用",
+      "createdAt": "2026-06-20T16:01:33.142Z"
     }
   ],
   "transactions": [
@@ -85,6 +115,33 @@
       "quantity": 5,
       "note": "测试过期处理",
       "createdAt": "2026-06-20T14:39:25.475Z"
+    },
+    {
+      "id": "mqmiax8dw5nw6",
+      "medicineId": "mqmiax8c7jruk",
+      "medicineName": "阿莫西林",
+      "type": "stock",
+      "quantity": 100,
+      "note": "初始入库",
+      "createdAt": "2026-06-20T15:22:29.437Z"
+    },
+    {
+      "id": "mqmjp5n8s5z1g",
+      "medicineId": "mqmjp5n0kl8cf",
+      "medicineName": "感冒灵颗粒",
+      "type": "stock",
+      "quantity": 15,
+      "note": "批量导入入库",
+      "createdAt": "2026-06-20T16:01:33.140Z"
+    },
+    {
+      "id": "mqmjp5ntlun0s",
+      "medicineId": "mqmjp5nazdanq",
+      "medicineName": "健胃消食片",
+      "type": "stock",
+      "quantity": 20,
+      "note": "批量导入入库",
+      "createdAt": "2026-06-20T16:01:33.161Z"
     }
   ]
 }

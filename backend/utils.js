@@ -10,9 +10,16 @@ function daysUntil(dateStr) {
 }
 
 function isValidDate(dateStr) {
-  if (!dateStr) return false;
-  const date = new Date(dateStr);
-  return date instanceof Date && !isNaN(date);
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateStr)) return false;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (month < 1 || month > 12) return false;
+  if (day < 1) return false;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (day > daysInMonth) return false;
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 function isPositiveInteger(num) {

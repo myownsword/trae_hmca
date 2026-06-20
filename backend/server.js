@@ -396,24 +396,86 @@ app.post('/api/import/confirm', upload.single('file'), (req, res) => {
 
   const existingBatchNos = new Set(db.get('medicines').map(m => m.batchNo).value());
   const seenBatchNos = new Set();
-  const added = [];
+  const toAdd = [];
+  const errors = [];
+  const skipped = [];
 
   for (const { line, data } of rows) {
-    if (!data.name || !data.batchNo || !data.expiryDate || data.quantity === undefined || data.quantity === '') {
+    const rowErrors = [];
+
+    if (!data.name) rowErrors.push('药品名称不能为空');
+    if (!data.batchNo) rowErrors.push('批号不能为空');
+    if (!data.expiryDate) rowErrors.push('有效期不能为空');
+    if (data.quantity === undefined || data.quantity === '') rowErrors.push('数量不能为空');
+
+    if (data.expiryDate && !isValidDate(data.expiryDate)) {
+      rowErrors.push(`有效期格式无效: ${data.expiryDate}`);
+    }
+
+    let qty = null;
+    if (data.quantity !== undefined && data.quantity !== '') {
+      qty = parseInt(data.quantity, 10);
+      if (!isNonNegativeInteger(qty)) {
+        rowErrors.push(`数量必须是非负整数: ${data.quantity}`);
+      }
+    }
+
+    if (data.batchNo) {
+      if (existingBatchNos.has(data.batchNo)) {
+        skipped.push({
+          line,
+          reason: `批号已存在: ${data.batchNo}`,
+          data
+        });
+        continue;
+      }
+      if (seenBatchNos.has(data.batchNo)) {
+        errors.push({
+          line,
+          reason: `CSV 内重复批号: ${data.batchNo}`,
+          data
+        });
+        continue;
+      }
+      seenBatchNos.add(data.batchNo);
+    }
+
+    if (rowErrors.length > 0) {
+      errors.push({
+        line,
+        reason: rowErrors.join('; '),
+        data
+      });
       continue;
     }
-    if (!isValidDate(data.expiryDate)) continue;
-    const qty = parseInt(data.quantity, 10);
-    if (!isNonNegativeInteger(qty)) continue;
-    if (existingBatchNos.has(data.batchNo)) continue;
-    if (seenBatchNos.has(data.batchNo)) continue;
-    seenBatchNos.add(data.batchNo);
 
+    toAdd.push({
+      line,
+      data: {
+        name: data.name,
+        batchNo: data.batchNo,
+        quantity: qty,
+        expiryDate: data.expiryDate,
+        location: data.location || '',
+        note: data.note || ''
+      }
+    });
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      error: `导入文件存在 ${errors.length} 条错误记录，已拒绝整份文件。请修正后重新导入。`,
+      details: { errors, skipped }
+    });
+  }
+
+  const added = [];
+  for (const { data } of toAdd) {
     const medicine = {
       id: generateId(),
       name: data.name,
       batchNo: data.batchNo,
-      quantity: qty,
+      quantity: data.quantity,
       expiryDate: data.expiryDate,
       location: data.location || '',
       note: data.note || '',
@@ -422,12 +484,12 @@ app.post('/api/import/confirm', upload.single('file'), (req, res) => {
     db.get('medicines').push(medicine).write();
     added.push(medicine);
 
-    if (qty > 0) {
-      addTransaction(medicine.id, medicine.name, 'stock', qty, '批量导入入库');
+    if (data.quantity > 0) {
+      addTransaction(medicine.id, medicine.name, 'stock', data.quantity, '批量导入入库');
     }
   }
 
-  res.json({ added: added.length, medicines: added });
+  res.json({ added: added.length, skipped: skipped.length, medicines: added });
 });
 
 app.get('/api/export', (req, res) => {

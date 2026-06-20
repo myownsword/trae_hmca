@@ -42,12 +42,17 @@ export default function ImportExport() {
 
   async function handleImport() {
     if (!file) return
-    if (!confirm(`确定要导入吗？将新增 ${preview?.toAdd || 0} 条记录。`)) return
+    if (!preview) return
+    if (preview.errors > 0) {
+      setError(`文件存在 ${preview.errors} 条错误记录，无法导入。请修正所有错误后重新上传。`)
+      return
+    }
+    if (!confirm(`确定要导入吗？将新增 ${preview?.toAdd || 0} 条记录，跳过 ${preview?.skipped || 0} 条重复记录。`)) return
     try {
       setLoading(true)
       setError(null)
       const result = await importConfirm(file)
-      showMessage('success', `成功导入 ${result.added} 条记录`)
+      showMessage('success', `成功导入 ${result.added} 条记录${result.skipped ? `，跳过 ${result.skipped} 条重复记录` : ''}`)
       setFile(null)
       setPreview(null)
     } catch (err) {
@@ -114,11 +119,19 @@ export default function ImportExport() {
             <button
               className="btn btn-success"
               onClick={handleImport}
-              disabled={!preview || loading}
+              disabled={!preview || loading || preview.errors > 0}
+              title={preview?.errors > 0 ? '存在错误记录，请修正后重新上传' : ''}
             >
               确认导入
             </button>
           </div>
+
+          {preview && preview.errors > 0 && (
+            <div className="alert alert-error" style={{ marginTop: '1rem' }}>
+              ⚠️ 文件存在 <strong>{preview.errors}</strong> 条错误记录，无法导入。
+              请修正下方列出的所有错误后，重新上传文件。
+            </div>
+          )}
 
           {preview && (
             <div style={{ marginTop: '1.5rem' }}>
