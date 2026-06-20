@@ -1,0 +1,90 @@
+{
+  "medicines": [
+    {
+      "id": "mqmgnvglw8a1d",
+      "name": "??????",
+      "batchNo": "AMX-TEST-001",
+      "quantity": 25,
+      "expiryDate": "2026-12-31",
+      "location": "????",
+      "note": "??3???2?",
+      "createdAt": "2026-06-20T14:36:34.437Z"
+    },
+    {
+      "id": "mqmgon0litgqr",
+      "name": "????",
+      "batchNo": "IBU-EXPIRING",
+      "quantity": 3,
+      "expiryDate": "2026-06-30",
+      "location": "????",
+      "note": "?????",
+      "createdAt": "2026-06-20T14:37:10.149Z"
+    },
+    {
+      "id": "mqmgon38oh9a7",
+      "name": "???C",
+      "batchNo": "VITC-EXPIRED",
+      "quantity": 0,
+      "expiryDate": "2024-01-01",
+      "location": "????",
+      "note": "",
+      "createdAt": "2026-06-20T14:37:10.244Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "mqmgnvgljpnau",
+      "medicineId": "mqmgnvglw8a1d",
+      "medicineName": "??????",
+      "type": "stock",
+      "quantity": 20,
+      "note": "初始入库",
+      "createdAt": "2026-06-20T14:36:34.437Z"
+    },
+    {
+      "id": "mqmgo94n1gffb",
+      "medicineId": "mqmgnvglw8a1d",
+      "medicineName": "??????",
+      "type": "take",
+      "quantity": 5,
+      "note": "????",
+      "createdAt": "2026-06-20T14:36:52.151Z"
+    },
+    {
+      "id": "mqmgo97mw1ol9",
+      "medicineId": "mqmgnvglw8a1d",
+      "medicineName": "??????",
+      "type": "stock",
+      "quantity": 10,
+      "note": "????",
+      "createdAt": "2026-06-20T14:36:52.258Z"
+    },
+    {
+      "id": "mqmgon0lfon9k",
+      "medicineId": "mqmgon0litgqr",
+      "medicineName": "????",
+      "type": "stock",
+      "quantity": 3,
+      "note": "初始入库",
+      "createdAt": "2026-06-20T14:37:10.149Z"
+    },
+    {
+      "id": "mqmgon38moom8",
+      "medicineId": "mqmgon38oh9a7",
+      "medicineName": "???C",
+      "type": "stock",
+      "quantity": 5,
+      "note": "初始入库",
+      "createdAt": "2026-06-20T14:37:10.244Z"
+    },
+    {
+      "id": "mqmgrjfnyheho",
+      "medicineId": "mqmgon38oh9a7",
+      "medicineName": "???C",
+      "type": "discard",
+      "quantity": 5,
+      "note": "测试过期处理",
+      "createdAt": "2026-06-20T14:39:25.475Z"
+    }
+  ]
+}
