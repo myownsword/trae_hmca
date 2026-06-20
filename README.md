@@ -323,9 +323,11 @@ name,batchNo,quantity,expiryDate,location,note
 
 #### 导入校验规则
 1. **必填列**：`name`、`batchNo`、`quantity`、`expiryDate` 不能为空
-2. **日期格式**：`expiryDate` 必须是合法日期（如 `2026-12-31`）
+2. **日期格式**：`expiryDate` 必须是 **严格 YYYY-MM-DD 格式的真实日历日期（如 `2026-02-30`、`not-a-date`、`2026/12/31` 都会被拒绝）
 3. **数量格式**：`quantity` 必须是非负整数
 4. **重复批号**：与现有数据或 CSV 内重复的批号会被跳过或报错
+
+> **安全策略**：只要 CSV 中存在任意一条 errors 记录，**整份文件将被拒绝导入**，不会有部分数据被写入，库存和流水保持不变。skipped 记录（如与库内重复批号）不影响导入，但不会被写入。
 
 ---
 

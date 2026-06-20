@@ -7,7 +7,9 @@ const db = low(adapter);
 
 db.defaults({
   medicines: [],
-  transactions: []
+  transactions: [],
+  medicationPlans: [],
+  planLogs: []
 }).write();
 
 module.exports = db;

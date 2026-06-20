@@ -675,6 +675,77 @@ tr:hover {
   }
 }
 
+.plan-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border-left: 4px solid;
+  margin-bottom: 0.75rem;
+}
+
+.plan-item.active {
+  border-left-color: #48bb78;
+}
+
+.plan-item.overdue {
+  border-left-color: #e53e3e;
+  background: #fff5f5;
+}
+
+.plan-item.low-stock {
+  border-left-color: #ed8936;
+}
+
+.plan-item.expired {
+  border-left-color: #a0aec0;
+  opacity: 0.7;
+}
+
+.plan-info .name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.plan-info .meta {
+  font-size: 0.85rem;
+  color: #718096;
+  margin-top: 0.25rem;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.plan-time {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.plan-time.overdue {
+  color: #e53e3e;
+}
+
+.plan-member {
+  display: inline-block;
+  background: #ebf8ff;
+  color: #2b6cb0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.bg-teal {
+  background: #e6fffa;
+  color: #319795;
+}
+
 @media (max-width: 768px) {
   .navbar-content {
     flex-direction: column;

@@ -4,9 +4,11 @@ import MedicineList from './components/MedicineList.jsx'
 import TransactionList from './components/TransactionList.jsx'
 import ImportExport from './components/ImportExport.jsx'
 import ExpiredMedicines from './components/ExpiredMedicines.jsx'
+import MedicationPlanList from './components/MedicationPlanList.jsx'
 
 const navItems = [
   { key: 'dashboard', label: '首页' },
+  { key: 'plans', label: '用药计划' },
   { key: 'medicines', label: '药品管理' },
   { key: 'transactions', label: '流水记录' },
   { key: 'expired', label: '过期处理' },
@@ -20,6 +22,8 @@ export default function App() {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />
+      case 'plans':
+        return <MedicationPlanList />
       case 'medicines':
         return <MedicineList />
       case 'transactions':

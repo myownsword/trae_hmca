@@ -6,11 +6,17 @@ const db = require('./db');
 const {
   daysUntil,
   isValidDate,
+  isValidTime,
   isPositiveInteger,
   isNonNegativeInteger,
   generateId,
   parseCSV,
-  toCSV
+  toCSV,
+  formatDate,
+  isDateInRange,
+  isDateBefore,
+  isDateAfter,
+  getDayOfWeek
 } = require('./utils');
 
 const app = express();
@@ -543,6 +549,389 @@ app.post('/api/expired/:id/discard', (req, res) => {
   const tx = addTransaction(medicine.id, medicine.name, 'discard', qty, req.body.note || '过期药品处理');
 
   res.json({ medicine, transaction: tx });
+});
+
+function addPlanLog(planId, medicineId, medicineName, batchNo, memberName, scheduledDate, scheduledTime, action, quantity, note = '') {
+  const log = {
+    id: generateId(),
+    planId,
+    medicineId,
+    medicineName,
+    batchNo,
+    memberName,
+    scheduledDate,
+    scheduledTime,
+    action,
+    quantity,
+    note,
+    createdAt: new Date().toISOString()
+  };
+  db.get('planLogs').push(log).write();
+  return log;
+}
+
+function shouldPlanRunOnDate(plan, dateStr) {
+  if (plan.status !== 'active') return false;
+  if (!isDateInRange(dateStr, plan.startDate, plan.endDate)) return false;
+  const dayOfWeek = getDayOfWeek(dateStr);
+  return plan.frequencyDays.includes(dayOfWeek);
+}
+
+function generatePlanScheduleItems(plan, dateStr) {
+  if (!shouldPlanRunOnDate(plan, dateStr)) return [];
+  return plan.reminderTimes.map(time => ({
+    planId: plan.id,
+    medicineId: plan.medicineId,
+    medicineName: plan.medicineName,
+    batchNo: plan.batchNo,
+    memberName: plan.memberName,
+    dosagePerTime: plan.dosagePerTime,
+    scheduledDate: dateStr,
+    scheduledTime: time,
+    note: plan.note
+  }));
+}
+
+function isPlanItemCompleted(planId, scheduledDate, scheduledTime) {
+  return db.get('planLogs')
+    .find({ planId, scheduledDate, scheduledTime })
+    .value() !== undefined;
+}
+
+function validatePlanRequest(body, isUpdate = false) {
+  const errors = [];
+  const {
+    medicineId, memberName, dosagePerTime, frequency,
+    frequencyDays, startDate, endDate, reminderTimes
+  } = body;
+
+  if (!isUpdate || medicineId !== undefined) {
+    if (!medicineId) errors.push('药品ID不能为空');
+  }
+
+  if (!isUpdate || memberName !== undefined) {
+    if (!memberName || !memberName.trim()) errors.push('成员姓名不能为空');
+  }
+
+  if (!isUpdate || dosagePerTime !== undefined) {
+    const dosage = parseInt(dosagePerTime, 10);
+    if (!isPositiveInteger(dosage)) errors.push('每次用量必须是正整数');
+  }
+
+  if (!isUpdate || frequency !== undefined) {
+    if (!['daily', 'weekly'].includes(frequency)) errors.push('频次必须是 daily 或 weekly');
+  }
+
+  if (!isUpdate || frequencyDays !== undefined) {
+    if (!Array.isArray(frequencyDays) || frequencyDays.length === 0) {
+      errors.push('频次日期不能为空');
+    } else {
+      const validDays = [0, 1, 2, 3, 4, 5, 6];
+      const allValid = frequencyDays.every(d => validDays.includes(d));
+      if (!allValid) errors.push('频次日期包含无效值');
+    }
+  }
+
+  if (!isUpdate || startDate !== undefined) {
+    if (!startDate || !isValidDate(startDate)) errors.push('开始日期格式无效');
+  }
+
+  if (!isUpdate || endDate !== undefined) {
+    if (!endDate || !isValidDate(endDate)) errors.push('结束日期格式无效');
+  }
+
+  if ((!isUpdate || startDate !== undefined || endDate !== undefined) &&
+      body.startDate && body.endDate) {
+    if (isDateAfter(body.startDate, body.endDate)) {
+      errors.push('开始日期不能晚于结束日期');
+    }
+  }
+
+  if (!isUpdate || reminderTimes !== undefined) {
+    if (!Array.isArray(reminderTimes) || reminderTimes.length === 0) {
+      errors.push('提醒时间不能为空');
+    } else {
+      const allValid = reminderTimes.every(t => isValidTime(t));
+      if (!allValid) errors.push('提醒时间格式无效，应为 HH:MM 格式');
+    }
+  }
+
+  return errors;
+}
+
+app.post('/api/plans', (req, res) => {
+  const errors = validatePlanRequest(req.body);
+  if (errors.length > 0) {
+    return res.status(400).json({ error: errors.join('; ') });
+  }
+
+  const {
+    medicineId, memberName, dosagePerTime, frequency,
+    frequencyDays, startDate, endDate, reminderTimes, note
+  } = req.body;
+
+  const medicine = db.get('medicines').find({ id: medicineId }).value();
+  if (!medicine) {
+    return res.status(404).json({ error: '药品不存在' });
+  }
+
+  if (daysUntil(medicine.expiryDate) < 0) {
+    return res.status(400).json({ error: '该药品已过期，无法创建用药计划' });
+  }
+
+  if (isDateAfter(startDate, medicine.expiryDate)) {
+    return res.status(400).json({ error: '计划开始日期晚于药品有效期' });
+  }
+
+  if (isDateAfter(endDate, medicine.expiryDate)) {
+    return res.status(400).json({ error: '计划结束日期晚于药品有效期' });
+  }
+
+  const today = formatDate(new Date());
+  if (isDateBefore(endDate, today)) {
+    return res.status(400).json({ error: '计划结束日期早于今天' });
+  }
+
+  const plan = {
+    id: generateId(),
+    medicineId: medicine.id,
+    medicineName: medicine.name,
+    batchNo: medicine.batchNo,
+    memberName: memberName.trim(),
+    dosagePerTime: parseInt(dosagePerTime, 10),
+    frequency,
+    frequencyDays: [...frequencyDays].sort((a, b) => a - b),
+    startDate,
+    endDate,
+    reminderTimes: [...reminderTimes].sort(),
+    note: note || '',
+    status: 'active',
+    createdAt: new Date().toISOString()
+  };
+
+  db.get('medicationPlans').push(plan).write();
+  res.status(201).json(plan);
+});
+
+app.get('/api/plans', (req, res) => {
+  const { status, medicineId } = req.query;
+  let plans = db.get('medicationPlans').value();
+
+  if (status) {
+    plans = plans.filter(p => p.status === status);
+  }
+  if (medicineId) {
+    plans = plans.filter(p => p.medicineId === medicineId);
+  }
+
+  const result = plans.map(plan => {
+    const medicine = db.get('medicines').find({ id: plan.medicineId }).value();
+    const isExpired = medicine ? daysUntil(medicine.expiryDate) < 0 : false;
+    const daysLeft = medicine ? daysUntil(medicine.expiryDate) : null;
+    return {
+      ...plan,
+      currentQuantity: medicine ? medicine.quantity : 0,
+      isExpired,
+      daysLeft
+    };
+  });
+
+  res.json(result);
+});
+
+app.get('/api/plans/today', (req, res) => {
+  const today = formatDate(new Date());
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const plans = db.get('medicationPlans')
+    .filter({ status: 'active' })
+    .value();
+
+  const todayItems = [];
+  const overdueItems = [];
+
+  plans.forEach(plan => {
+    const medicine = db.get('medicines').find({ id: plan.medicineId }).value();
+    if (!medicine) return;
+
+    const isExpired = daysUntil(medicine.expiryDate) < 0;
+
+    for (let d = 0; d <= 7; d++) {
+      const checkDate = new Date();
+      checkDate.setDate(checkDate.getDate() - d);
+      const dateStr = formatDate(checkDate);
+
+      if (!shouldPlanRunOnDate(plan, dateStr)) continue;
+
+      plan.reminderTimes.forEach(time => {
+        if (isPlanItemCompleted(plan.id, dateStr, time)) return;
+
+        const item = {
+          planId: plan.id,
+          medicineId: plan.medicineId,
+          medicineName: plan.medicineName,
+          batchNo: plan.batchNo,
+          memberName: plan.memberName,
+          dosagePerTime: plan.dosagePerTime,
+          scheduledDate: dateStr,
+          scheduledTime: time,
+          note: plan.note,
+          currentQuantity: medicine.quantity,
+          isExpired,
+          isToday: dateStr === today,
+          isOverdue: dateStr < today || (dateStr === today && time < currentTime)
+        };
+
+        if (dateStr === today) {
+          todayItems.push(item);
+        } else if (dateStr < today) {
+          overdueItems.push(item);
+        }
+      });
+    }
+  });
+
+  todayItems.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+  overdueItems.sort((a, b) => {
+    const dateCompare = a.scheduledDate.localeCompare(b.scheduledDate);
+    if (dateCompare !== 0) return dateCompare;
+    return a.scheduledTime.localeCompare(b.scheduledTime);
+  });
+
+  res.json({
+    today: todayItems,
+    overdue: overdueItems
+  });
+});
+
+app.get('/api/plans/:id', (req, res) => {
+  const plan = db.get('medicationPlans').find({ id: req.params.id }).value();
+  if (!plan) {
+    return res.status(404).json({ error: '用药计划不存在' });
+  }
+
+  const medicine = db.get('medicines').find({ id: plan.medicineId }).value();
+  const isExpired = medicine ? daysUntil(medicine.expiryDate) < 0 : false;
+  const daysLeft = medicine ? daysUntil(medicine.expiryDate) : null;
+
+  res.json({
+    ...plan,
+    currentQuantity: medicine ? medicine.quantity : 0,
+    isExpired,
+    daysLeft
+  });
+});
+
+app.post('/api/plans/:id/execute', (req, res) => {
+  const plan = db.get('medicationPlans').find({ id: req.params.id }).value();
+  if (!plan) {
+    return res.status(404).json({ error: '用药计划不存在' });
+  }
+
+  if (plan.status !== 'active') {
+    return res.status(400).json({ error: '该计划已停用，无法执行' });
+  }
+
+  const { action, scheduledDate, scheduledTime, note } = req.body;
+
+  if (!['taken', 'skipped'].includes(action)) {
+    return res.status(400).json({ error: '操作类型必须是 taken 或 skipped' });
+  }
+
+  if (!scheduledDate || !isValidDate(scheduledDate)) {
+    return res.status(400).json({ error: '计划日期格式无效' });
+  }
+
+  if (!scheduledTime || !isValidTime(scheduledTime)) {
+    return res.status(400).json({ error: '计划时间格式无效' });
+  }
+
+  if (!shouldPlanRunOnDate(plan, scheduledDate)) {
+    return res.status(400).json({ error: '该日期不在计划执行范围内' });
+  }
+
+  if (!plan.reminderTimes.includes(scheduledTime)) {
+    return res.status(400).json({ error: '该时间不在计划提醒时间内' });
+  }
+
+  if (isPlanItemCompleted(plan.id, scheduledDate, scheduledTime)) {
+    return res.status(400).json({ error: '该计划项已执行过' });
+  }
+
+  const medicine = db.get('medicines').find({ id: plan.medicineId }).value();
+  if (!medicine) {
+    return res.status(404).json({ error: '关联药品不存在' });
+  }
+
+  if (daysUntil(medicine.expiryDate) < 0) {
+    return res.status(400).json({ error: '该药品已过期，请先处理过期药品' });
+  }
+
+  if (action === 'taken') {
+    if (medicine.quantity < plan.dosagePerTime) {
+      return res.status(400).json({
+        error: `库存不足，当前库存 ${medicine.quantity}，需要 ${plan.dosagePerTime}`
+      });
+    }
+    if (medicine.quantity <= 0) {
+      return res.status(400).json({ error: '库存为零，无法执行服用' });
+    }
+
+    medicine.quantity -= plan.dosagePerTime;
+    db.get('medicines').find({ id: plan.medicineId }).assign({ quantity: medicine.quantity }).write();
+    const tx = addTransaction(medicine.id, medicine.name, 'take', plan.dosagePerTime,
+      `用药计划执行 - ${plan.memberName}${note ? ' - ' + note : ''}`);
+    const log = addPlanLog(plan.id, medicine.id, medicine.name, plan.batchNo,
+      plan.memberName, scheduledDate, scheduledTime, 'taken', plan.dosagePerTime, note || '');
+
+    res.json({
+      success: true,
+      medicine,
+      transaction: tx,
+      log
+    });
+  } else {
+    const log = addPlanLog(plan.id, medicine.id, medicine.name, plan.batchNo,
+      plan.memberName, scheduledDate, scheduledTime, 'skipped', 0, note || '');
+
+    res.json({
+      success: true,
+      log
+    });
+  }
+});
+
+app.put('/api/plans/:id/disable', (req, res) => {
+  const plan = db.get('medicationPlans').find({ id: req.params.id }).value();
+  if (!plan) {
+    return res.status(404).json({ error: '用药计划不存在' });
+  }
+
+  if (plan.status === 'disabled') {
+    return res.status(400).json({ error: '该计划已停用' });
+  }
+
+  plan.status = 'disabled';
+  plan.disabledAt = new Date().toISOString();
+  plan.disableReason = req.body.note || '手动停用';
+
+  db.get('medicationPlans').find({ id: req.params.id }).assign(plan).write();
+  res.json(plan);
+});
+
+app.get('/api/plans/:id/logs', (req, res) => {
+  const plan = db.get('medicationPlans').find({ id: req.params.id }).value();
+  if (!plan) {
+    return res.status(404).json({ error: '用药计划不存在' });
+  }
+
+  const logs = db.get('planLogs')
+    .filter({ planId: req.params.id })
+    .sortBy(l => -new Date(l.createdAt).getTime())
+    .value();
+
+  res.json(logs);
 });
 
 const PORT = process.env.PORT || 3003;

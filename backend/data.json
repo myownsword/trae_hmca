@@ -44,7 +44,7 @@
       "id": "mqmjp5n0kl8cf",
       "name": "感冒灵颗粒",
       "batchNo": "GL-CLEAN-001",
-      "quantity": 15,
+      "quantity": 14,
       "expiryDate": "2026-12-31",
       "location": "客厅药箱",
       "note": "冲服",
@@ -142,6 +142,102 @@
       "quantity": 20,
       "note": "批量导入入库",
       "createdAt": "2026-06-20T16:01:33.161Z"
+    },
+    {
+      "id": "mqmz6ab4250hb",
+      "medicineId": "mqmjp5n0kl8cf",
+      "medicineName": "感冒灵颗粒",
+      "type": "take",
+      "quantity": 1,
+      "note": "用药计划执行 - ?? - ?????",
+      "createdAt": "2026-06-20T23:14:46.576Z"
+    }
+  ],
+  "medicationPlans": [
+    {
+      "id": "mqmz5qlly4tm5",
+      "medicineId": "mqmjp5n0kl8cf",
+      "medicineName": "感冒灵颗粒",
+      "batchNo": "GL-CLEAN-001",
+      "memberName": "??",
+      "dosagePerTime": 1,
+      "frequency": "daily",
+      "frequencyDays": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "startDate": "2026-06-21",
+      "endDate": "2026-06-27",
+      "reminderTimes": [
+        "08:00",
+        "20:00"
+      ],
+      "note": "????",
+      "status": "active",
+      "createdAt": "2026-06-20T23:14:21.033Z"
+    },
+    {
+      "id": "mqmz7fnu8odj4",
+      "medicineId": "mqmgon0litgqr",
+      "medicineName": "????",
+      "batchNo": "IBU-EXPIRING",
+      "memberName": "??",
+      "dosagePerTime": 5,
+      "frequency": "daily",
+      "frequencyDays": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "startDate": "2026-06-21",
+      "endDate": "2026-06-25",
+      "reminderTimes": [
+        "09:00"
+      ],
+      "note": "??",
+      "status": "disabled",
+      "createdAt": "2026-06-20T23:15:40.170Z",
+      "disabledAt": "2026-06-20T23:16:21.600Z",
+      "disableReason": "???,????"
+    }
+  ],
+  "planLogs": [
+    {
+      "id": "mqmz6ab4pgdky",
+      "planId": "mqmz5qlly4tm5",
+      "medicineId": "mqmjp5n0kl8cf",
+      "medicineName": "感冒灵颗粒",
+      "batchNo": "GL-CLEAN-001",
+      "memberName": "??",
+      "scheduledDate": "2026-06-21",
+      "scheduledTime": "08:00",
+      "action": "taken",
+      "quantity": 1,
+      "note": "?????",
+      "createdAt": "2026-06-20T23:14:46.576Z"
+    },
+    {
+      "id": "mqmz6uec1mh2m",
+      "planId": "mqmz5qlly4tm5",
+      "medicineId": "mqmjp5n0kl8cf",
+      "medicineName": "感冒灵颗粒",
+      "batchNo": "GL-CLEAN-001",
+      "memberName": "??",
+      "scheduledDate": "2026-06-21",
+      "scheduledTime": "20:00",
+      "action": "skipped",
+      "quantity": 0,
+      "note": "????,??",
+      "createdAt": "2026-06-20T23:15:12.612Z"
     }
   ]
 }

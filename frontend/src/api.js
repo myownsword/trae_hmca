@@ -134,3 +134,41 @@ export function discardExpired(id, note = '') {
     body: JSON.stringify({ note }),
   });
 }
+
+export function getPlans(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(`/plans${query ? `?${query}` : ''}`);
+}
+
+export function getPlan(id) {
+  return request(`/plans/${id}`);
+}
+
+export function getTodayPlans() {
+  return request('/plans/today');
+}
+
+export function addPlan(data) {
+  return request('/plans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function executePlan(id, action, scheduledDate, scheduledTime, note = '') {
+  return request(`/plans/${id}/execute`, {
+    method: 'POST',
+    body: JSON.stringify({ action, scheduledDate, scheduledTime, note }),
+  });
+}
+
+export function disablePlan(id, note = '') {
+  return request(`/plans/${id}/disable`, {
+    method: 'PUT',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export function getPlanLogs(id) {
+  return request(`/plans/${id}/logs`);
+}

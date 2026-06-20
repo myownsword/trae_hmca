@@ -93,12 +93,73 @@ function toCSV(headers, rows) {
   return lines.join('\n');
 }
 
+function isValidTime(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return false;
+  const regex = /^\d{2}:\d{2}$/;
+  if (!regex.test(timeStr)) return false;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60;
+}
+
+function isSameDay(date1, date2) {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  return d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+}
+
+function formatDate(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isDateInRange(dateStr, startDateStr, endDateStr) {
+  const date = new Date(dateStr);
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  date.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  return date >= start && date <= end;
+}
+
+function isDateBefore(dateStr1, dateStr2) {
+  const d1 = new Date(dateStr1);
+  const d2 = new Date(dateStr2);
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  return d1 < d2;
+}
+
+function isDateAfter(dateStr1, dateStr2) {
+  const d1 = new Date(dateStr1);
+  const d2 = new Date(dateStr2);
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  return d1 > d2;
+}
+
+function getDayOfWeek(dateStr) {
+  return new Date(dateStr).getDay();
+}
+
 module.exports = {
   daysUntil,
   isValidDate,
+  isValidTime,
   isPositiveInteger,
   isNonNegativeInteger,
   generateId,
   parseCSV,
-  toCSV
+  toCSV,
+  isSameDay,
+  formatDate,
+  isDateInRange,
+  isDateBefore,
+  isDateAfter,
+  getDayOfWeek
 };
